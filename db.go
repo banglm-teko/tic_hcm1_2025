@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json" // Added for JSON handling
 	"fmt"
 	"log"
+	"math/rand" // Added for random activity generation
 	"strings"
 	"time"
 
@@ -68,6 +70,44 @@ func InitDB(dataSourceName string) {
             sent_date DATETIME,
             is_used BOOLEAN DEFAULT FALSE,
             FOREIGN KEY (user_id) REFERENCES users(user_id)
+        );`,
+		`CREATE TABLE IF NOT EXISTS user_streaks (
+            user_id INT PRIMARY KEY,
+            current_streak INT DEFAULT 0,
+            longest_streak INT DEFAULT 0,
+            last_activity_date DATETIME,
+            streak_type VARCHAR(50) DEFAULT 'engagement',
+            is_active BOOLEAN DEFAULT TRUE,
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        );`,
+		`CREATE TABLE IF NOT EXISTS user_activities (
+            activity_id INT PRIMARY KEY AUTO_INCREMENT,
+            user_id INT,
+            activity_type VARCHAR(50),
+            activity_date DATETIME,
+            activity_value FLOAT DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        );`,
+		`CREATE TABLE IF NOT EXISTS streak_predictions (
+            prediction_id INT PRIMARY KEY AUTO_INCREMENT,
+            user_id INT,
+            prediction_date DATETIME,
+            probability_of_streak_drop DECIMAL(5,4),
+            predicted_days_to_streak_drop INT,
+            risk_level VARCHAR(20),
+            confidence DECIMAL(5,4),
+            actual_streak_dropped BOOLEAN DEFAULT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        );`,
+		`CREATE TABLE IF NOT EXISTS streak_models (
+            model_id INT PRIMARY KEY AUTO_INCREMENT,
+            model_type VARCHAR(100),
+            version VARCHAR(50),
+            training_date DATETIME,
+            accuracy DECIMAL(5,4),
+            parameters JSON,
+            feature_names JSON,
+            is_active BOOLEAN DEFAULT TRUE
         );`,
 	}
 
@@ -152,6 +192,38 @@ func InsertSampleData() {
 		101, "Thời trang nữ", 0.85)
 	if err != nil {
 		log.Printf("Error inserting user preferences: %v", err)
+		return
+	}
+
+	// Insert sample user activities for user B
+	activityTypes := []string{"login", "browse", "add_to_cart", "purchase", "review"}
+	activityValues := []float64{1.0, 2.0, 5.0, 10.0, 3.0}
+
+	// Generate activities over the last 30 days with some gaps to simulate streak breaks
+	baseDate := time.Now().Add(-30 * 24 * time.Hour)
+	for i := 0; i < 30; i++ {
+		// Skip some days to create realistic streak patterns
+		if i == 5 || i == 6 || i == 12 || i == 13 || i == 20 || i == 21 || i == 22 {
+			continue // Skip weekends and some random days
+		}
+
+		activityDate := baseDate.Add(time.Duration(i) * 24 * time.Hour)
+		activityType := activityTypes[rand.Intn(len(activityTypes))]
+		activityValue := activityValues[rand.Intn(len(activityValues))]
+
+		_, err = tx.Exec("INSERT IGNORE INTO user_activities (user_id, activity_type, activity_date, activity_value) VALUES (?, ?, ?, ?)",
+			101, activityType, activityDate, activityValue)
+		if err != nil {
+			log.Printf("Error inserting activity for day %d: %v", i, err)
+			return
+		}
+	}
+
+	// Insert user streak data for user B
+	_, err = tx.Exec("INSERT IGNORE INTO user_streaks (user_id, current_streak, longest_streak, last_activity_date, streak_type, is_active) VALUES (?, ?, ?, ?, ?, ?)",
+		101, 3, 15, time.Now().Add(-3*24*time.Hour), "engagement", true)
+	if err != nil {
+		log.Printf("Error inserting user streak: %v", err)
 		return
 	}
 
@@ -265,4 +337,179 @@ func GetSavedOffers(userID int) ([]Offer, error) {
 		offers = append(offers, offer)
 	}
 	return offers, nil
+}
+
+// GetUserStreak retrieves streak information for a user
+func GetUserStreak(userID int) (*UserStreak, error) {
+	streak := &UserStreak{UserID: userID}
+
+	err := db.QueryRow(`
+		SELECT current_streak, longest_streak, last_activity_date, streak_type, is_active
+		FROM user_streaks WHERE user_id = ?
+	`, userID).Scan(&streak.CurrentStreak, &streak.LongestStreak, &streak.LastActivityDate, &streak.StreakType, &streak.IsActive)
+
+	if err == sql.ErrNoRows {
+		return nil, nil // User has no streak data yet
+	} else if err != nil {
+		return nil, fmt.Errorf("error fetching user streak: %w", err)
+	}
+
+	return streak, nil
+}
+
+// UpdateUserStreak updates or creates streak data for a user
+func UpdateUserStreak(userID int, currentStreak int, lastActivityDate time.Time) error {
+	_, err := db.Exec(`
+		INSERT INTO user_streaks (user_id, current_streak, longest_streak, last_activity_date, streak_type, is_active)
+		VALUES (?, ?, ?, ?, 'engagement', TRUE)
+		ON DUPLICATE KEY UPDATE
+		current_streak = VALUES(current_streak),
+		longest_streak = GREATEST(longest_streak, VALUES(current_streak)),
+		last_activity_date = VALUES(last_activity_date),
+		is_active = TRUE
+	`, userID, currentStreak, currentStreak, lastActivityDate)
+
+	return err
+}
+
+// RecordUserActivity records a new user activity
+func RecordUserActivity(userID int, activityType string, activityValue float64) error {
+	_, err := db.Exec(`
+		INSERT INTO user_activities (user_id, activity_type, activity_date, activity_value)
+		VALUES (?, ?, NOW(), ?)
+	`, userID, activityType, activityValue)
+
+	return err
+}
+
+// GetUserActivities retrieves recent activities for a user
+func GetUserActivities(userID int, limit int) ([]struct {
+	ActivityType  string
+	ActivityDate  time.Time
+	ActivityValue float64
+}, error) {
+	rows, err := db.Query(`
+		SELECT activity_type, activity_date, activity_value
+		FROM user_activities
+		WHERE user_id = ?
+		ORDER BY activity_date DESC
+		LIMIT ?
+	`, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var activities []struct {
+		ActivityType  string
+		ActivityDate  time.Time
+		ActivityValue float64
+	}
+
+	for rows.Next() {
+		var activity struct {
+			ActivityType  string
+			ActivityDate  time.Time
+			ActivityValue float64
+		}
+		err := rows.Scan(&activity.ActivityType, &activity.ActivityDate, &activity.ActivityValue)
+		if err != nil {
+			return nil, err
+		}
+		activities = append(activities, activity)
+	}
+
+	return activities, nil
+}
+
+// SaveStreakPrediction saves a prediction to the database
+func SaveStreakPrediction(prediction StreakPrediction) error {
+	_, err := db.Exec(`
+		INSERT INTO streak_predictions 
+		(user_id, prediction_date, probability_of_streak_drop, predicted_days_to_streak_drop, risk_level, confidence)
+		VALUES (?, NOW(), ?, ?, ?, ?)
+	`, prediction.UserID, prediction.ProbabilityOfStreakDrop, prediction.PredictedDaysToStreakDrop,
+		prediction.RiskLevel, prediction.Confidence)
+
+	return err
+}
+
+// GetStreakPredictions retrieves predictions for a user
+func GetStreakPredictions(userID int, limit int) ([]StreakPrediction, error) {
+	rows, err := db.Query(`
+		SELECT user_id, probability_of_streak_drop, predicted_days_to_streak_drop, 
+		       risk_level, confidence, actual_streak_dropped
+		FROM streak_predictions
+		WHERE user_id = ?
+		ORDER BY prediction_date DESC
+		LIMIT ?
+	`, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var predictions []StreakPrediction
+	for rows.Next() {
+		var pred StreakPrediction
+		var actualDropped sql.NullBool
+		err := rows.Scan(&pred.UserID, &pred.ProbabilityOfStreakDrop, &pred.PredictedDaysToStreakDrop,
+			&pred.RiskLevel, &pred.Confidence, &actualDropped)
+		if err != nil {
+			return nil, err
+		}
+		predictions = append(predictions, pred)
+	}
+
+	return predictions, nil
+}
+
+// SaveStreakModel saves a trained model to the database
+func SaveStreakModel(model StreakModel) error {
+	paramsJSON, err := json.Marshal(model.Parameters)
+	if err != nil {
+		return err
+	}
+
+	featuresJSON, err := json.Marshal(model.FeatureNames)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`
+		INSERT INTO streak_models (model_type, version, training_date, accuracy, parameters, feature_names, is_active)
+		VALUES (?, ?, ?, ?, ?, ?, TRUE)
+	`, model.ModelType, model.Version, model.TrainingDate, model.Accuracy, paramsJSON, featuresJSON)
+
+	return err
+}
+
+// GetActiveStreakModel retrieves the currently active model
+func GetActiveStreakModel() (*StreakModel, error) {
+	var model StreakModel
+	var paramsJSON, featuresJSON []byte
+
+	err := db.QueryRow(`
+		SELECT model_type, version, training_date, accuracy, parameters, feature_names
+		FROM streak_models
+		WHERE is_active = TRUE
+		ORDER BY training_date DESC
+		LIMIT 1
+	`).Scan(&model.ModelType, &model.Version, &model.TrainingDate, &model.Accuracy, &paramsJSON, &featuresJSON)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	// Parse JSON fields
+	if err := json.Unmarshal(paramsJSON, &model.Parameters); err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(featuresJSON, &model.FeatureNames); err != nil {
+		return nil, err
+	}
+
+	return &model, nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings" // Added for DemoStreakAI
 	"time"
 
 	"github.com/joho/godotenv" // For loading .env file
@@ -14,6 +15,17 @@ func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("No .env file found or error loading .env. Assuming environment variables are set.")
+	}
+
+	// Check if user wants to run API server
+	if len(os.Args) > 1 && os.Args[1] == "api" {
+		// Run API server
+		port := os.Getenv("API_PORT")
+		if port == "" {
+			port = "8080" // Default port
+		}
+		StartAPIServer(port)
+		return
 	}
 
 	// Get MySQL DSN from environment variable
@@ -28,6 +40,28 @@ func main() {
 
 	// Insert sample data
 	InsertSampleData()
+
+	// Initialize and train the streak prediction AI model
+	fmt.Println("\n=== Initializing Streak Prediction AI Model ===")
+	streakModel := NewStreakAIModel()
+
+	// Generate training data and train the model
+	fmt.Println("Generating training data...")
+	trainingData := GenerateTrainingData(1000) // Generate 1000 synthetic training samples
+
+	fmt.Println("Training streak prediction model...")
+	err = streakModel.TrainModel(trainingData)
+	if err != nil {
+		log.Printf("Error training streak model: %v", err)
+	} else {
+		fmt.Printf("Model trained successfully! Accuracy: %.2f%%\n", streakModel.Model.Accuracy*100)
+
+		// Save the trained model to database
+		err = SaveStreakModel(*streakModel.Model)
+		if err != nil {
+			log.Printf("Warning: Could not save model to database: %v", err)
+		}
+	}
 
 	// Simulate scanning users to find those at churn risk
 	usersToCheck := []int{101} // Just checking user 101 for this example
@@ -53,6 +87,30 @@ func main() {
 		fmt.Printf("  Recent Orders: %v\n", userData.RecentOrders)
 		fmt.Printf("  Preferred Categories: %v\n", userData.PreferredCategories)
 		fmt.Printf("  Churn Risk: %.2f\n", userData.ChurnRisk)
+
+		// --- Streak Prediction Analysis ---
+		fmt.Println("\n  --- Streak Prediction Analysis ---")
+		streakPrediction, err := streakModel.PredictStreakDrop(userID, userData)
+		if err != nil {
+			log.Printf("Error predicting streak drop for user %d: %v", userID, err)
+		} else {
+			fmt.Printf("  Streak Drop Probability: %.2f%%\n", streakPrediction.ProbabilityOfStreakDrop*100)
+			fmt.Printf("  Predicted Days to Streak Drop: %d\n", streakPrediction.PredictedDaysToStreakDrop)
+			fmt.Printf("  Risk Level: %s\n", streakPrediction.RiskLevel)
+			fmt.Printf("  Confidence: %.2f%%\n", streakPrediction.Confidence*100)
+			fmt.Printf("  Recommended Actions:\n")
+			for i, action := range streakPrediction.RecommendedActions {
+				fmt.Printf("    %d. %s\n", i+1, action)
+			}
+
+			// Display key features
+			fmt.Printf("  Key Features:\n")
+			fmt.Printf("    - Days since last activity: %d\n", streakPrediction.Features.DaysSinceLastActivity)
+			fmt.Printf("    - Current streak length: %d\n", streakPrediction.Features.CurrentStreakLength)
+			fmt.Printf("    - Average streak length: %.1f\n", streakPrediction.Features.AverageStreakLength)
+			fmt.Printf("    - Streak break frequency: %.2f\n", streakPrediction.Features.StreakBreakFrequency)
+			fmt.Printf("    - Last order days ago: %d\n", streakPrediction.Features.LastOrderDaysAgo)
+		}
 
 		shouldOffer, preferredCategory := AssessUserForOffer(userData)
 
@@ -115,4 +173,37 @@ func main() {
 	} else {
 		fmt.Println("No offers found for User ID 101.")
 	}
+
+	// --- Streak Prediction Queries ---
+	fmt.Println("\n--- Querying Streak Predictions from DB ---")
+	streakPredictions, err := GetStreakPredictions(101, 5)
+	if err != nil {
+		log.Printf("Error fetching streak predictions: %v", err)
+	} else if len(streakPredictions) > 0 {
+		for _, pred := range streakPredictions {
+			fmt.Printf("Prediction - User ID: %d, Probability: %.2f%%, Risk: %s, Confidence: %.2f%%\n",
+				pred.UserID, pred.ProbabilityOfStreakDrop*100, pred.RiskLevel, pred.Confidence*100)
+		}
+	} else {
+		fmt.Println("No streak predictions found for User ID 101.")
+	}
+
+	// --- Model Management ---
+	fmt.Println("\n--- Active Streak Model Info ---")
+	activeModel, err := GetActiveStreakModel()
+	if err != nil {
+		log.Printf("Error fetching active model: %v", err)
+	} else if activeModel != nil {
+		fmt.Printf("Model Type: %s\n", activeModel.ModelType)
+		fmt.Printf("Version: %s\n", activeModel.Version)
+		fmt.Printf("Training Date: %s\n", activeModel.TrainingDate.Format("2006-01-02 15:04:05"))
+		fmt.Printf("Accuracy: %.2f%%\n", activeModel.Accuracy*100)
+		fmt.Printf("Features: %v\n", activeModel.FeatureNames)
+	} else {
+		fmt.Println("No active streak model found.")
+	}
+
+	// Run the AI streak prediction demo
+	fmt.Println("\n" + strings.Repeat("=", 60))
+	DemoStreakAI()
 }

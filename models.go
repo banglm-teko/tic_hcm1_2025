@@ -2,6 +2,19 @@ package main
 
 import "time"
 
+// LoginRequest represents the login API request
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// LoginResponse represents the login API response
+type LoginResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	UserID  int    `json:"user_id,omitempty"`
+}
+
 // User struct represents a row in the users table
 type User struct {
 	UserID         int        `json:"user_id"`
@@ -77,4 +90,60 @@ type OpenAIResponse struct {
 			Content string `json:"content"`
 		} `json:"message"`
 	} `json:"choices"`
+}
+
+// UserStreak represents user engagement streak data
+type UserStreak struct {
+	UserID           int       `json:"user_id"`
+	CurrentStreak    int       `json:"current_streak"`
+	LongestStreak    int       `json:"longest_streak"`
+	LastActivityDate time.Time `json:"last_activity_date"`
+	StreakType       string    `json:"streak_type"` // "login", "purchase", "engagement"
+	IsActive         bool      `json:"is_active"`
+}
+
+// StreakFeatures contains features for ML model prediction
+type StreakFeatures struct {
+	UserID                   int     `json:"user_id"`
+	DaysSinceLastActivity    int     `json:"days_since_last_activity"`
+	CurrentStreakLength      int     `json:"current_streak_length"`
+	AverageStreakLength      float64 `json:"average_streak_length"`
+	StreakBreakFrequency     float64 `json:"streak_break_frequency"`
+	TotalActivities          int     `json:"total_activities"`
+	DaysSinceRegistration    int     `json:"days_since_registration"`
+	AverageOrderValue        float64 `json:"average_order_value"`
+	TotalOrders              int     `json:"total_orders"`
+	ChurnRisk                float64 `json:"churn_risk"`
+	PreferredCategoriesCount int     `json:"preferred_categories_count"`
+	LastOrderDaysAgo         int     `json:"last_order_days_ago"`
+	SeasonalFactor           float64 `json:"seasonal_factor"`
+	WeekendActivityRatio     float64 `json:"weekend_activity_ratio"`
+	EveningActivityRatio     float64 `json:"evening_activity_ratio"`
+}
+
+// StreakPrediction contains the model's prediction output
+type StreakPrediction struct {
+	UserID                    int            `json:"user_id"`
+	ProbabilityOfStreakDrop   float64        `json:"probability_of_streak_drop"`
+	PredictedDaysToStreakDrop int            `json:"predicted_days_to_streak_drop"`
+	RiskLevel                 string         `json:"risk_level"` // "low", "medium", "high", "critical"
+	Confidence                float64        `json:"confidence"`
+	RecommendedActions        []string       `json:"recommended_actions"`
+	Features                  StreakFeatures `json:"features"`
+}
+
+// StreakModel represents the trained ML model
+type StreakModel struct {
+	ModelType    string                 `json:"model_type"`
+	Version      string                 `json:"version"`
+	TrainingDate time.Time              `json:"training_date"`
+	Accuracy     float64                `json:"accuracy"`
+	Parameters   map[string]interface{} `json:"parameters"`
+	FeatureNames []string               `json:"feature_names"`
+}
+
+// StreakTrainingData represents training data for the model
+type StreakTrainingData struct {
+	Features StreakFeatures `json:"features"`
+	Label    bool           `json:"label"` // true if streak was broken within prediction window
 }
