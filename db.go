@@ -10,8 +10,6 @@ import (
 	_ "github.com/go-sql-driver/mysql" // MySQL driver
 )
 
-var db *sql.DB
-
 // InitDB initializes the MySQL database connection and creates tables if they don't exist
 func InitDB(dataSourceName string) {
 	var err error
@@ -265,4 +263,28 @@ func GetSavedOffers(userID int) ([]Offer, error) {
 		offers = append(offers, offer)
 	}
 	return offers, nil
+}
+
+var db *sql.DB // Khai báo biến db toàn cục
+
+// ... (các hàm InitDB, CloseDB, InsertSampleData như cũ) ...
+
+// GetProducts fetches all products from the database
+func GetProducts() ([]Product, error) {
+	rows, err := db.Query("SELECT product_id, product_name, category, price FROM products")
+	if err != nil {
+		return nil, fmt.Errorf("error querying products: %w", err)
+	}
+	defer rows.Close()
+
+	var products []Product
+	for rows.Next() {
+		var p Product
+		if err := rows.Scan(&p.ProductID, &p.ProductName, &p.Category, &p.Price); err != nil {
+			log.Printf("Error scanning product row: %v", err)
+			continue
+		}
+		products = append(products, p)
+	}
+	return products, nil
 }

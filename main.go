@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -115,4 +116,26 @@ func main() {
 	} else {
 		fmt.Println("No offers found for User ID 101.")
 	}
+
+	err = godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found or error loading .env. Assuming environment variables are set.")
+	}
+
+	mysqlDSN = os.Getenv("MYSQL_DSN")
+	if mysqlDSN == "" {
+		log.Fatal("MYSQL_DSN environment variable is not set. Please set it in .env or system.")
+	}
+
+	InitDB(mysqlDSN)
+	defer CloseDB()
+
+	// Chèn dữ liệu mẫu (sẽ tự động thêm sản phẩm mới)
+	InsertSampleData()
+
+	// --- BẮT ĐẦU PHẦN API ---
+	// Đăng ký handler từ file product_api.go
+	http.HandleFunc("/api/products", GetProductsHandler)
+	fmt.Println("API server starting on :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
