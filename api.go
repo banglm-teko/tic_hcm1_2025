@@ -46,7 +46,7 @@ func StartAPIServer(port string) {
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
-	api.HandleFunc("/login", handleLogin).Methods("POST")
+	//api.HandleFunc("/login", handleLogin).Methods("POST")
 	api.HandleFunc("/health", handleHealth).Methods("GET")
 
 	// CORS middleware
@@ -66,55 +66,58 @@ func StartAPIServer(port string) {
 }
 
 // handleLogin processes login requests
-func handleLogin(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	// Parse request body
-	var loginReq LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
-		http.Error(w, `{"success": false, "message": "Invalid JSON format"}`, http.StatusBadRequest)
-		return
-	}
-
-	// Validate input
-	if loginReq.Username == "" || loginReq.Password == "" {
-		http.Error(w, `{"success": false, "message": "Username and password are required"}`, http.StatusBadRequest)
-		return
-	}
-
-	// Check hardcoded credentials
-	if password, exists := hardcodedUsers[loginReq.Username]; exists && password == loginReq.Password {
-		// Login successful
-		userID := userIDs[loginReq.Username]
-
-		// Update last login time in database if user exists
-		if userID > 0 {
-			UpdateUserLastLogin(userID)
-		}
-
-		response := LoginResponse{
-			Success: true,
-			Message: "Login successful",
-			UserID:  userID,
-		}
-
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
-
-		log.Printf("Successful login for user: %s (ID: %d)", loginReq.Username, userID)
-	} else {
-		// Login failed
-		response := LoginResponse{
-			Success: false,
-			Message: "Invalid username or password",
-		}
-
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
-
-		log.Printf("Failed login attempt for user: %s", loginReq.Username)
-	}
-}
+//func handleLogin(w http.ResponseWriter, r *http.Request) {
+//	w.Header().Set("Content-Type", "application/json")
+//
+//	// Parse request body
+//	var loginReq LoginRequest
+//	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
+//		http.Error(w, `{"success": false, "message": "Invalid JSON format"}`, http.StatusBadRequest)
+//		return
+//	}
+//
+//	// Validate input
+//	if loginReq.Username == "" || loginReq.Password == "" {
+//		http.Error(w, `{"success": false, "message": "Username and password are required"}`, http.StatusBadRequest)
+//		return
+//	}
+//
+//	// Check hardcoded credentials
+//	if password, exists := hardcodedUsers[loginReq.Username]; exists && password == loginReq.Password {
+//		// Login successful
+//		userID := userIDs[loginReq.Username]
+//
+//		// Update last login time in database if user exists
+//		if userID > 0 {
+//			err := UpdateUserLastLogin(userID)
+//			if err != nil {
+//				log.Printf("Error updating last login for user %d: %v", userID, err)
+//			}
+//		}
+//
+//		response := LoginResponse{
+//			Success: true,
+//			Message: "Login successful",
+//			UserID:  userID,
+//		}
+//
+//		w.WriteHeader(http.StatusOK)
+//		json.NewEncoder(w).Encode(response)
+//
+//		log.Printf("Successful login for user: %s (ID: %d)", loginReq.Username, userID)
+//	} else {
+//		// Login failed
+//		response := LoginResponse{
+//			Success: false,
+//			Message: "Invalid username or password",
+//		}
+//
+//		w.WriteHeader(http.StatusUnauthorized)
+//		json.NewEncoder(w).Encode(response)
+//
+//		log.Printf("Failed login attempt for user: %s", loginReq.Username)
+//	}
+//}
 
 // handleHealth provides a simple health check endpoint
 func handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -147,19 +150,19 @@ func corsMiddleware(next http.Handler) http.Handler {
 }
 
 // UpdateUserLastLogin updates the last login time for a user in the database
-func UpdateUserLastLogin(userID int) {
-	// Check if database connection is available
-	if db == nil {
-		log.Printf("Database not available, skipping last login update for user %d", userID)
-		return
-	}
-
-	query := "UPDATE users SET last_login = NOW() WHERE user_id = ?"
-
-	_, err := db.Exec(query, userID)
-	if err != nil {
-		log.Printf("Error updating last login for user %d: %v", userID, err)
-	} else {
-		log.Printf("Updated last login time for user %d", userID)
-	}
-}
+//func UpdateUserLastLogin(userID int) {
+//	// Check if database connection is available
+//	if db == nil {
+//		log.Printf("Database not available, skipping last login update for user %d", userID)
+//		return
+//	}
+//
+//	query := "UPDATE users SET last_login = NOW() WHERE user_id = ?"
+//
+//	_, err := db.Exec(query, userID)
+//	if err != nil {
+//		log.Printf("Error updating last login for user %d: %v", userID, err)
+//	} else {
+//		log.Printf("Updated last login time for user %d", userID)
+//	}
+//}

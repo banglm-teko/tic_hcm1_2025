@@ -2,28 +2,6 @@ package main
 
 import "time"
 
-// LoginRequest represents the login API request
-type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-// LoginResponse represents the login API response
-type LoginResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	UserID  int    `json:"user_id,omitempty"`
-}
-
-// User struct represents a row in the users table
-type User struct {
-	UserID         int        `json:"user_id"`
-	Username       string     `json:"username"`
-	Email          string     `json:"email"`
-	LastLogin      *time.Time `json:"last_login"` // Use pointer for nullable fields
-	RegisteredDate time.Time  `json:"registered_date"`
-}
-
 // Order struct represents a row in the orders table
 type Order struct {
 	OrderID    int       `json:"order_id"`
@@ -146,4 +124,41 @@ type StreakModel struct {
 type StreakTrainingData struct {
 	Features StreakFeatures `json:"features"`
 	Label    bool           `json:"label"` // true if streak was broken within prediction window
+}
+
+// User struct represents a row in the users table
+type User struct {
+	UserID         int        `json:"user_id"`
+	Username       string     `json:"username"`
+	Email          string     `json:"email"`
+	PasswordHash   string     `json:"password_hash"` // Added for password, JSON ignore
+	LastLogin      *time.Time `json:"last_login"`
+	RegisteredDate time.Time  `json:"registered_date"`
+}
+
+// ... (các structs khác giữ nguyên) ...
+
+// LoginRequest struct for API login
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// LoginResponse struct for API login
+type LoginResponse struct {
+	UserID            int                `json:"user_id"`
+	Username          string             `json:"username"`
+	Token             string             `json:"token"` // In a real app, this would be a JWT or session token
+	Message           string             `json:"message"`
+	Success           bool               `json:"success"`
+	OfferNotification *OfferNotification `json:"offer_notification,omitempty"` // Optional for push notification
+}
+
+// OfferNotification struct for push notification
+type OfferNotification struct {
+	Title   string `json:"title"`
+	Message string `json:"message"`
+	OfferID int    `json:"offer_id"`
+	// Thêm các trường khác cần thiết cho frontend (ví dụ: offer_type, offer_value)
 }

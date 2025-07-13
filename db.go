@@ -5,7 +5,7 @@ import (
 	"encoding/json" // Added for JSON handling
 	"fmt"
 	"log"
-	"math/rand" // Added for random activity generation
+	//"math/rand" // Added for random activity generation
 	"strings"
 	"time"
 
@@ -13,110 +13,110 @@ import (
 )
 
 // InitDB initializes the MySQL database connection and creates tables if they don't exist
-func InitDB(dataSourceName string) {
-	var err error
-	db, err = sql.Open("mysql", dataSourceName)
-	if err != nil {
-		log.Fatalf("Error opening database connection: %v", err)
-	}
-
-	// Ping the database to verify the connection
-	err = db.Ping()
-	if err != nil {
-		log.Fatalf("Error connecting to the database: %v", err)
-	}
-	fmt.Println("Successfully connected to MySQL database!")
-
-	// Create tables
-	createTableSQL := []string{
-		`CREATE TABLE IF NOT EXISTS users (
-            user_id INT PRIMARY KEY,
-            username VARCHAR(255) NOT NULL,
-            email VARCHAR(255) UNIQUE NOT NULL,
-            last_login DATETIME,
-            registered_date DATETIME
-        );`,
-		`CREATE TABLE IF NOT EXISTS products (
-            product_id INT PRIMARY KEY,
-            product_name VARCHAR(255) NOT NULL,
-            category VARCHAR(255) NOT NULL,
-            price DECIMAL(10, 2)
-        );`,
-		`CREATE TABLE IF NOT EXISTS orders (
-            order_id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT,
-            product_id INT,
-            order_date DATETIME,
-            quantity INT,
-            total_price DECIMAL(10, 2),
-            FOREIGN KEY (user_id) REFERENCES users(user_id),
-            FOREIGN KEY (product_id) REFERENCES products(product_id)
-        );`,
-		`CREATE TABLE IF NOT EXISTS user_preferences (
-            user_id INT PRIMARY KEY,
-            preferred_categories TEXT,
-            churn_risk DECIMAL(3, 2),
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        );`,
-		`CREATE TABLE IF NOT EXISTS offers (
-            offer_id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT,
-            offer_type VARCHAR(50),
-            offer_value VARCHAR(100),
-            target_category VARCHAR(255),
-            generated_message TEXT,
-            sent_date DATETIME,
-            is_used BOOLEAN DEFAULT FALSE,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        );`,
-		`CREATE TABLE IF NOT EXISTS user_streaks (
-            user_id INT PRIMARY KEY,
-            current_streak INT DEFAULT 0,
-            longest_streak INT DEFAULT 0,
-            last_activity_date DATETIME,
-            streak_type VARCHAR(50) DEFAULT 'engagement',
-            is_active BOOLEAN DEFAULT TRUE,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        );`,
-		`CREATE TABLE IF NOT EXISTS user_activities (
-            activity_id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT,
-            activity_type VARCHAR(50),
-            activity_date DATETIME,
-            activity_value FLOAT DEFAULT 0,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        );`,
-		`CREATE TABLE IF NOT EXISTS streak_predictions (
-            prediction_id INT PRIMARY KEY AUTO_INCREMENT,
-            user_id INT,
-            prediction_date DATETIME,
-            probability_of_streak_drop DECIMAL(5,4),
-            predicted_days_to_streak_drop INT,
-            risk_level VARCHAR(20),
-            confidence DECIMAL(5,4),
-            actual_streak_dropped BOOLEAN DEFAULT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        );`,
-		`CREATE TABLE IF NOT EXISTS streak_models (
-            model_id INT PRIMARY KEY AUTO_INCREMENT,
-            model_type VARCHAR(100),
-            version VARCHAR(50),
-            training_date DATETIME,
-            accuracy DECIMAL(5,4),
-            parameters JSON,
-            feature_names JSON,
-            is_active BOOLEAN DEFAULT TRUE
-        );`,
-	}
-
-	for _, sqlStmt := range createTableSQL {
-		_, err := db.Exec(sqlStmt)
-		if err != nil {
-			log.Fatalf("Error creating table: %v\nSQL: %s", err, sqlStmt)
-		}
-	}
-	fmt.Println("Database tables checked/created successfully.")
-}
+//func InitDB(dataSourceName string) {
+//	var err error
+//	db, err = sql.Open("mysql", dataSourceName)
+//	if err != nil {
+//		log.Fatalf("Error opening database connection: %v", err)
+//	}
+//
+//	// Ping the database to verify the connection
+//	err = db.Ping()
+//	if err != nil {
+//		log.Fatalf("Error connecting to the database: %v", err)
+//	}
+//	fmt.Println("Successfully connected to MySQL database!")
+//
+//	// Create tables
+//	createTableSQL := []string{
+//		`CREATE TABLE IF NOT EXISTS users (
+//            user_id INT PRIMARY KEY,
+//            username VARCHAR(255) NOT NULL,
+//            email VARCHAR(255) UNIQUE NOT NULL,
+//            last_login DATETIME,
+//            registered_date DATETIME
+//        );`,
+//		`CREATE TABLE IF NOT EXISTS products (
+//            product_id INT PRIMARY KEY,
+//            product_name VARCHAR(255) NOT NULL,
+//            category VARCHAR(255) NOT NULL,
+//            price DECIMAL(10, 2)
+//        );`,
+//		`CREATE TABLE IF NOT EXISTS orders (
+//            order_id INT PRIMARY KEY AUTO_INCREMENT,
+//            user_id INT,
+//            product_id INT,
+//            order_date DATETIME,
+//            quantity INT,
+//            total_price DECIMAL(10, 2),
+//            FOREIGN KEY (user_id) REFERENCES users(user_id),
+//            FOREIGN KEY (product_id) REFERENCES products(product_id)
+//        );`,
+//		`CREATE TABLE IF NOT EXISTS user_preferences (
+//            user_id INT PRIMARY KEY,
+//            preferred_categories TEXT,
+//            churn_risk DECIMAL(3, 2),
+//            FOREIGN KEY (user_id) REFERENCES users(user_id)
+//        );`,
+//		`CREATE TABLE IF NOT EXISTS offers (
+//            offer_id INT PRIMARY KEY AUTO_INCREMENT,
+//            user_id INT,
+//            offer_type VARCHAR(50),
+//            offer_value VARCHAR(100),
+//            target_category VARCHAR(255),
+//            generated_message TEXT,
+//            sent_date DATETIME,
+//            is_used BOOLEAN DEFAULT FALSE,
+//            FOREIGN KEY (user_id) REFERENCES users(user_id)
+//        );`,
+//		`CREATE TABLE IF NOT EXISTS user_streaks (
+//            user_id INT PRIMARY KEY,
+//            current_streak INT DEFAULT 0,
+//            longest_streak INT DEFAULT 0,
+//            last_activity_date DATETIME,
+//            streak_type VARCHAR(50) DEFAULT 'engagement',
+//            is_active BOOLEAN DEFAULT TRUE,
+//            FOREIGN KEY (user_id) REFERENCES users(user_id)
+//        );`,
+//		`CREATE TABLE IF NOT EXISTS user_activities (
+//            activity_id INT PRIMARY KEY AUTO_INCREMENT,
+//            user_id INT,
+//            activity_type VARCHAR(50),
+//            activity_date DATETIME,
+//            activity_value FLOAT DEFAULT 0,
+//            FOREIGN KEY (user_id) REFERENCES users(user_id)
+//        );`,
+//		`CREATE TABLE IF NOT EXISTS streak_predictions (
+//            prediction_id INT PRIMARY KEY AUTO_INCREMENT,
+//            user_id INT,
+//            prediction_date DATETIME,
+//            probability_of_streak_drop DECIMAL(5,4),
+//            predicted_days_to_streak_drop INT,
+//            risk_level VARCHAR(20),
+//            confidence DECIMAL(5,4),
+//            actual_streak_dropped BOOLEAN DEFAULT NULL,
+//            FOREIGN KEY (user_id) REFERENCES users(user_id)
+//        );`,
+//		`CREATE TABLE IF NOT EXISTS streak_models (
+//            model_id INT PRIMARY KEY AUTO_INCREMENT,
+//            model_type VARCHAR(100),
+//            version VARCHAR(50),
+//            training_date DATETIME,
+//            accuracy DECIMAL(5,4),
+//            parameters JSON,
+//            feature_names JSON,
+//            is_active BOOLEAN DEFAULT TRUE
+//        );`,
+//	}
+//
+//	for _, sqlStmt := range createTableSQL {
+//		_, err := db.Exec(sqlStmt)
+//		if err != nil {
+//			log.Fatalf("Error creating table: %v\nSQL: %s", err, sqlStmt)
+//		}
+//	}
+//	fmt.Println("Database tables checked/created successfully.")
+//}
 
 // CloseDB closes the database connection
 func CloseDB() {
@@ -126,112 +126,118 @@ func CloseDB() {
 	}
 }
 
-// InsertSampleData inserts sample data into the database
-func InsertSampleData() {
-	tx, err := db.Begin()
-	if err != nil {
-		log.Printf("Error starting transaction: %v", err)
-		return
-	}
-	defer tx.Rollback() // Rollback on error
-
-	// Insert user B
-	_, err = tx.Exec("INSERT IGNORE INTO users (user_id, username, email, last_login, registered_date) VALUES (?, ?, ?, ?, ?)",
-		101, "userB", "userb@example.com", time.Now().Add(-100*24*time.Hour), time.Now().Add(-365*24*time.Hour))
-	if err != nil {
-		log.Printf("Error inserting user B: %v", err)
-		return
-	}
-
-	// Insert products
-	products := []Product{
-		{ProductID: 1, ProductName: "Áo Khoác Nữ Denim", Category: "Thời trang nữ", Price: 450000},
-		{ProductID: 2, ProductName: "Váy Hoa Công Sở", Category: "Thời trang nữ", Price: 600000},
-		{ProductID: 3, ProductName: "Giày Cao Gót Đen", Category: "Giày dép nữ", Price: 700000},
-		{ProductID: 4, ProductName: "Quần Jeans Nam Slim Fit", Category: "Thời trang nam", Price: 500000},
-		{ProductID: 5, ProductName: "Tai Nghe Bluetooth", Category: "Điện tử", Price: 1200000},
-	}
-	for _, p := range products {
-		_, err := tx.Exec("INSERT IGNORE INTO products (product_id, product_name, category, price) VALUES (?, ?, ?, ?)",
-			p.ProductID, p.ProductName, p.Category, p.Price)
-		if err != nil {
-			log.Printf("Error inserting product %s: %v", p.ProductName, err)
-			return
-		}
-	}
-
-	// Insert orders for user B
-	// Check for existence before inserting to avoid duplicate primary key errors if run multiple times
-	var count int
-	err = tx.QueryRow("SELECT COUNT(*) FROM orders WHERE user_id = ? AND product_id = ? AND order_date = ?",
-		101, 1, time.Now().Add(-120*24*time.Hour)).Scan(&count)
-	if err != nil || count == 0 {
-		_, err = tx.Exec("INSERT INTO orders (user_id, product_id, order_date, quantity, total_price) VALUES (?, ?, ?, ?, ?)",
-			101, 1, time.Now().Add(-120*24*time.Hour), 1, 450000)
-		if err != nil {
-			log.Printf("Error inserting order 1: %v", err)
-			return
-		}
-	}
-
-	err = tx.QueryRow("SELECT COUNT(*) FROM orders WHERE user_id = ? AND product_id = ? AND order_date = ?",
-		101, 2, time.Now().Add(-110*24*time.Hour)).Scan(&count)
-	if err != nil || count == 0 {
-		_, err = tx.Exec("INSERT INTO orders (user_id, product_id, order_date, quantity, total_price) VALUES (?, ?, ?, ?, ?)",
-			101, 2, time.Now().Add(-110*24*time.Hour), 1, 600000)
-		if err != nil {
-			log.Printf("Error inserting order 2: %v", err)
-			return
-		}
-	}
-
-	// Insert user preferences for user B (simulated AI output)
-	_, err = tx.Exec("INSERT IGNORE INTO user_preferences (user_id, preferred_categories, churn_risk) VALUES (?, ?, ?)",
-		101, "Thời trang nữ", 0.85)
-	if err != nil {
-		log.Printf("Error inserting user preferences: %v", err)
-		return
-	}
-
-	// Insert sample user activities for user B
-	activityTypes := []string{"login", "browse", "add_to_cart", "purchase", "review"}
-	activityValues := []float64{1.0, 2.0, 5.0, 10.0, 3.0}
-
-	// Generate activities over the last 30 days with some gaps to simulate streak breaks
-	baseDate := time.Now().Add(-30 * 24 * time.Hour)
-	for i := 0; i < 30; i++ {
-		// Skip some days to create realistic streak patterns
-		if i == 5 || i == 6 || i == 12 || i == 13 || i == 20 || i == 21 || i == 22 {
-			continue // Skip weekends and some random days
-		}
-
-		activityDate := baseDate.Add(time.Duration(i) * 24 * time.Hour)
-		activityType := activityTypes[rand.Intn(len(activityTypes))]
-		activityValue := activityValues[rand.Intn(len(activityValues))]
-
-		_, err = tx.Exec("INSERT IGNORE INTO user_activities (user_id, activity_type, activity_date, activity_value) VALUES (?, ?, ?, ?)",
-			101, activityType, activityDate, activityValue)
-		if err != nil {
-			log.Printf("Error inserting activity for day %d: %v", i, err)
-			return
-		}
-	}
-
-	// Insert user streak data for user B
-	_, err = tx.Exec("INSERT IGNORE INTO user_streaks (user_id, current_streak, longest_streak, last_activity_date, streak_type, is_active) VALUES (?, ?, ?, ?, ?, ?)",
-		101, 3, 15, time.Now().Add(-3*24*time.Hour), "engagement", true)
-	if err != nil {
-		log.Printf("Error inserting user streak: %v", err)
-		return
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		log.Printf("Error committing transaction: %v", err)
-		return
-	}
-	fmt.Println("Sample data inserted successfully.")
-}
+//// InsertSampleData inserts sample data into the database
+//func InsertSampleData() {
+//	tx, err := db.Begin()
+//	if err != nil {
+//		log.Printf("Error starting transaction: %v", err)
+//		return
+//	}
+//	defer tx.Rollback() // Rollback on error
+//
+//	// Insert user
+//	_, err = tx.Exec("INSERT IGNORE INTO users (user_id, username, email, last_login, registered_date) VALUES (?, ?, ?, ?, ?)",
+//		101, "userA", "user_a@example.com", time.Now().Add(-100*24*time.Hour), time.Now().Add(-365*24*time.Hour))
+//	if err != nil {
+//		log.Printf("Error inserting user B: %v", err)
+//		return
+//	}
+//	_, err = tx.Exec("INSERT IGNORE INTO users (user_id, username, email, last_login, registered_date) VALUES (?, ?, ?, ?, ?)",
+//		101, "userB", "user_b@example.com", time.Now().Add(-100*24*time.Hour), time.Now().Add(-365*24*time.Hour))
+//	if err != nil {
+//		log.Printf("Error inserting user B: %v", err)
+//		return
+//	}
+//
+//	// Insert products
+//	products := []Product{
+//		{ProductID: 1, ProductName: "Áo Khoác Nữ Denim", Category: "Thời trang nữ", Price: 450000},
+//		{ProductID: 2, ProductName: "Váy Hoa Công Sở", Category: "Thời trang nữ", Price: 600000},
+//		{ProductID: 3, ProductName: "Giày Cao Gót Đen", Category: "Giày dép nữ", Price: 700000},
+//		{ProductID: 4, ProductName: "Quần Jeans Nam Slim Fit", Category: "Thời trang nam", Price: 500000},
+//		{ProductID: 5, ProductName: "Tai Nghe Bluetooth", Category: "Điện tử", Price: 1200000},
+//	}
+//	for _, p := range products {
+//		_, err := tx.Exec("INSERT IGNORE INTO products (product_id, product_name, category, price) VALUES (?, ?, ?, ?)",
+//			p.ProductID, p.ProductName, p.Category, p.Price)
+//		if err != nil {
+//			log.Printf("Error inserting product %s: %v", p.ProductName, err)
+//			return
+//		}
+//	}
+//
+//	// Insert orders for user B
+//	// Check for existence before inserting to avoid duplicate primary key errors if run multiple times
+//	var count int
+//	err = tx.QueryRow("SELECT COUNT(*) FROM orders WHERE user_id = ? AND product_id = ? AND order_date = ?",
+//		101, 1, time.Now().Add(-120*24*time.Hour)).Scan(&count)
+//	if err != nil || count == 0 {
+//		_, err = tx.Exec("INSERT INTO orders (user_id, product_id, order_date, quantity, total_price) VALUES (?, ?, ?, ?, ?)",
+//			101, 1, time.Now().Add(-120*24*time.Hour), 1, 450000)
+//		if err != nil {
+//			log.Printf("Error inserting order 1: %v", err)
+//			return
+//		}
+//	}
+//
+//	err = tx.QueryRow("SELECT COUNT(*) FROM orders WHERE user_id = ? AND product_id = ? AND order_date = ?",
+//		101, 2, time.Now().Add(-110*24*time.Hour)).Scan(&count)
+//	if err != nil || count == 0 {
+//		_, err = tx.Exec("INSERT INTO orders (user_id, product_id, order_date, quantity, total_price) VALUES (?, ?, ?, ?, ?)",
+//			101, 2, time.Now().Add(-110*24*time.Hour), 1, 600000)
+//		if err != nil {
+//			log.Printf("Error inserting order 2: %v", err)
+//			return
+//		}
+//	}
+//
+//	// Insert user preferences for user B (simulated AI output)
+//	_, err = tx.Exec("INSERT IGNORE INTO user_preferences (user_id, preferred_categories, churn_risk) VALUES (?, ?, ?)",
+//		101, "Thời trang nữ", 0.85)
+//	if err != nil {
+//		log.Printf("Error inserting user preferences: %v", err)
+//		return
+//	}
+//
+//	// Insert sample user activities for user B
+//	activityTypes := []string{"login", "browse", "add_to_cart", "purchase", "review"}
+//	activityValues := []float64{1.0, 2.0, 5.0, 10.0, 3.0}
+//
+//	// Generate activities over the last 30 days with some gaps to simulate streak breaks
+//	baseDate := time.Now().Add(-30 * 24 * time.Hour)
+//	for i := 0; i < 30; i++ {
+//		// Skip some days to create realistic streak patterns
+//		if i == 5 || i == 6 || i == 12 || i == 13 || i == 20 || i == 21 || i == 22 {
+//			continue // Skip weekends and some random days
+//		}
+//
+//		activityDate := baseDate.Add(time.Duration(i) * 24 * time.Hour)
+//		activityType := activityTypes[rand.Intn(len(activityTypes))]
+//		activityValue := activityValues[rand.Intn(len(activityValues))]
+//
+//		_, err = tx.Exec("INSERT IGNORE INTO user_activities (user_id, activity_type, activity_date, activity_value) VALUES (?, ?, ?, ?)",
+//			101, activityType, activityDate, activityValue)
+//		if err != nil {
+//			log.Printf("Error inserting activity for day %d: %v", i, err)
+//			return
+//		}
+//	}
+//
+//	// Insert user streak data for user B
+//	_, err = tx.Exec("INSERT IGNORE INTO user_streaks (user_id, current_streak, longest_streak, last_activity_date, streak_type, is_active) VALUES (?, ?, ?, ?, ?, ?)",
+//		101, 3, 15, time.Now().Add(-3*24*time.Hour), "engagement", true)
+//	if err != nil {
+//		log.Printf("Error inserting user streak: %v", err)
+//		return
+//	}
+//
+//	err = tx.Commit()
+//	if err != nil {
+//		log.Printf("Error committing transaction: %v", err)
+//		return
+//	}
+//	fmt.Println("Sample data inserted successfully.")
+//}
 
 // GetUserData fetches all relevant data for a given user
 func GetUserData(userID int) (*UserData, error) {
@@ -336,8 +342,6 @@ func GetSavedOffers(userID int) ([]Offer, error) {
 	}
 	return offers, nil
 }
-
-var db *sql.DB // Khai báo biến db toàn cục
 
 // ... (các hàm InitDB, CloseDB, InsertSampleData như cũ) ...
 
@@ -534,4 +538,161 @@ func GetActiveStreakModel() (*StreakModel, error) {
 	}
 
 	return &model, nil
+}
+
+var db *sql.DB
+
+// ... (các hàm InitDB, CloseDB như cũ) ...
+
+// InitDB initializes the MySQL database connection and creates tables if they don't exist
+func InitDB(dataSourceName string) {
+	var err error
+	db, err = sql.Open("mysql", dataSourceName)
+	if err != nil {
+		log.Fatalf("Error opening database connection: %v", err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		log.Fatalf("Error connecting to the database: %v", err)
+	}
+	fmt.Println("Successfully connected to MySQL database!")
+
+	// Create tables (Updated users table)
+	createTableSQL := []string{
+		`CREATE TABLE IF NOT EXISTS users (
+            user_id INT PRIMARY KEY,
+            username VARCHAR(255) NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            last_login DATETIME,
+            registered_date DATETIME
+        );`,
+		// ... (các lệnh CREATE TABLE cho products, orders, user_preferences, offers như cũ) ...
+		`CREATE TABLE IF NOT EXISTS products (
+            product_id INT PRIMARY KEY,
+            product_name VARCHAR(255) NOT NULL,
+            category VARCHAR(255) NOT NULL,
+            price DECIMAL(10, 2)
+        );`,
+		`CREATE TABLE IF NOT EXISTS orders (
+            order_id INT PRIMARY KEY AUTO_INCREMENT,
+            user_id INT,
+            product_id INT,
+            order_date DATETIME,
+            quantity INT,
+            total_price DECIMAL(10, 2),
+            FOREIGN KEY (user_id) REFERENCES users(user_id),
+            FOREIGN KEY (product_id) REFERENCES products(product_id)
+        );`,
+		`CREATE TABLE IF NOT EXISTS user_preferences (
+            user_id INT PRIMARY KEY,
+            preferred_categories TEXT,
+            churn_risk DECIMAL(3, 2),
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        );`,
+		`CREATE TABLE IF NOT EXISTS offers (
+            offer_id INT PRIMARY KEY AUTO_INCREMENT,
+            user_id INT,
+            offer_type VARCHAR(50),
+            offer_value VARCHAR(100),
+            target_category VARCHAR(255),
+            generated_message TEXT,
+            sent_date DATETIME,
+            is_used BOOLEAN DEFAULT FALSE,
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+        );`,
+	}
+
+	for _, sqlStmt := range createTableSQL {
+		_, err := db.Exec(sqlStmt)
+		if err != nil {
+			log.Fatalf("Error creating table: %v\nSQL: %s", err, sqlStmt)
+		}
+	}
+	fmt.Println("Database tables checked/created successfully.")
+}
+
+// InsertSampleData inserts sample data into the database
+func InsertSampleData() {
+	tx, err := db.Begin()
+	if err != nil {
+		log.Printf("Error starting transaction: %v", err)
+		return
+	}
+	defer tx.Rollback() // Rollback on error
+
+	// Insert user B with a password hash (for simplicity, using plain text as "hash" here)
+	// In production, use bcrypt or similar for secure hashing
+	passwordHashB := "password123" // In real app: HashPassword("password123")
+	_, err = tx.Exec("INSERT IGNORE INTO users (user_id, username, email, password_hash, last_login, registered_date) VALUES (?, ?, ?, ?, ?, ?)",
+		101, "userB", "user_b@example.com", passwordHashB, time.Now().Add(-100*24*time.Hour), time.Now().Add(-365*24*time.Hour))
+	if err != nil {
+		log.Printf("Error inserting user B: %v", err)
+		return
+	}
+
+	// Insert another user for testing
+	passwordHashA := "securepass" // In real app: HashPassword("securepass")
+	_, err = tx.Exec("INSERT IGNORE INTO users (user_id, username, email, password_hash, last_login, registered_date) VALUES (?, ?, ?, ?, ?, ?)",
+		102, "userA", "user_a@example.com", passwordHashA, time.Now(), time.Now().Add(-50*24*time.Hour))
+	if err != nil {
+		log.Printf("Error inserting user A: %v", err)
+		return
+	}
+
+	// ... (phần chèn products, orders và user_preferences như cũ) ...
+
+	// Insert user preferences for user B (simulated AI output)
+	_, err = tx.Exec("INSERT IGNORE INTO user_preferences (user_id, preferred_categories, churn_risk) VALUES (?, ?, ?)",
+		101, "Thời trang nữ", 0.85)
+	if err != nil {
+		log.Printf("Error inserting user preferences for user B: %v", err)
+		return
+	}
+
+	// Insert user preferences for user A (low churn risk)
+	_, err = tx.Exec("INSERT IGNORE INTO user_preferences (user_id, preferred_categories, churn_risk) VALUES (?, ?, ?)",
+		102, "Điện tử", 0.15)
+	if err != nil {
+		log.Printf("Error inserting user preferences for user A: %v", err)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction: %v", err)
+		return
+	}
+	fmt.Println("Sample data inserted successfully.")
+}
+
+// GetUserByEmail retrieves a user by their email
+func GetUserByEmail(email string) (*User, error) {
+	var user User
+	var lastLogin sql.NullTime
+
+	err := db.QueryRow("SELECT * FROM users WHERE email = ?", email).Scan(
+		&user.UserID, &user.Username, &user.Email, &user.PasswordHash, &lastLogin, &user.RegisteredDate,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil // User not found
+	} else if err != nil {
+		return nil, fmt.Errorf("error fetching user by email: %w", err)
+	}
+
+	if lastLogin.Valid {
+		user.LastLogin = &lastLogin.Time
+	}
+
+	return &user, nil
+}
+
+// UpdateUserLastLogin updates the last_login timestamp for a user
+func UpdateUserLastLogin(userID int, loginTime time.Time) error {
+	_, err := db.Exec("UPDATE users SET last_login = ? WHERE user_id = ?", loginTime, userID)
+	if err != nil {
+		return fmt.Errorf("error updating last login: %w", err)
+	}
+	return nil
 }
