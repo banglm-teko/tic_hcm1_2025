@@ -12,8 +12,6 @@ import (
 	_ "github.com/go-sql-driver/mysql" // MySQL driver
 )
 
-var db *sql.DB
-
 // InitDB initializes the MySQL database connection and creates tables if they don't exist
 func InitDB(dataSourceName string) {
 	var err error
