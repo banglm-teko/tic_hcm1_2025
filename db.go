@@ -339,6 +339,30 @@ func GetSavedOffers(userID int) ([]Offer, error) {
 	return offers, nil
 }
 
+var db *sql.DB // Khai báo biến db toàn cục
+
+// ... (các hàm InitDB, CloseDB, InsertSampleData như cũ) ...
+
+// GetProducts fetches all products from the database
+func GetProducts() ([]Product, error) {
+	rows, err := db.Query("SELECT product_id, product_name, category, price FROM products")
+	if err != nil {
+		return nil, fmt.Errorf("error querying products: %w", err)
+	}
+	defer rows.Close()
+
+	var products []Product
+	for rows.Next() {
+		var p Product
+		if err := rows.Scan(&p.ProductID, &p.ProductName, &p.Category, &p.Price); err != nil {
+			log.Printf("Error scanning product row: %v", err)
+			continue
+		}
+		products = append(products, p)
+	}
+	return products, nil
+}
+
 // GetUserStreak retrieves streak information for a user
 func GetUserStreak(userID int) (*UserStreak, error) {
 	streak := &UserStreak{UserID: userID}
