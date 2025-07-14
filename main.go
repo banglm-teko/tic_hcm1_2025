@@ -236,6 +236,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/rs/cors"
 	"log"
 	"net/http"
 	"os"
@@ -257,13 +258,27 @@ func main() {
 	InitDB(mysqlDSN)
 	defer CloseDB()
 
-	// Chèn dữ liệu mẫu (đã bao gồm user B và user A)
 	InsertSampleData()
 
-	// --- Đăng ký API Endpoints ---
-	http.HandleFunc("/api/products", GetProductsHandler) // API lấy danh sách sản phẩm
-	http.HandleFunc("/api/login", LoginHandler)          // API đăng nhập
+	// --- Cấu hình CORS Middleware ---
+	// Cho phép tất cả các Origin, tất cả các phương thức (GET, POST, OPTIONS, v.v.)
+	// và cho phép gửi credentials (ví dụ: cookies, authorization headers)
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},                                                 // CHÚ Ý: Trong môi trường production, hãy thay thế "*" bằng danh sách các domain cụ thể của frontend.
+		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodOptions}, // Cho phép GET, POST, và OPTIONS (cho preflight requests)
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},                     // Cho phép các header này được gửi từ frontend
+		AllowCredentials: true,                                                          // Cho phép gửi cookies, authorization headers, v.v.
+		// Debug: true, // Bật debug mode để xem thông báo CORS trên console (chỉ dùng khi phát triển)
+	})
+
+	// Tạo một Mux (multiplexer) để đăng ký các handler của bạn
+	mux := http.NewServeMux()
+
+	// Đăng ký các API Endpoints với Mux
+	mux.HandleFunc("/api/products", GetProductsHandler) // API lấy danh sách sản phẩm
+	mux.HandleFunc("/api/login", LoginHandler)          // API đăng nhập
 
 	fmt.Println("API server starting on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	// Áp dụng CORS middleware cho toàn bộ server HTTP
+	log.Fatal(http.ListenAndServe(":8080", c.Handler(mux)))
 }
